@@ -1,5 +1,8 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
+export const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+export const MAX_BYTES = 8 * 1024 * 1024;
+
 const SCHEMA = {
   type: 'object',
   properties: {
@@ -19,8 +22,8 @@ const SYSTEM = [
   'Answer only through the structured output.',
 ].join(' ');
 
-// The Claude Code process inherits our own env; these two vars make it think it is
-// running inside Claude Code and change its behaviour, so drop them.
+// The child process inherits our env; these two vars make Claude Code think it
+// is running inside itself and change its behaviour, so drop them.
 function childEnv() {
   const env = { ...process.env };
   delete env.CLAUDECODE;
@@ -49,7 +52,7 @@ export async function classify(buffer, mediaType) {
     options: {
       systemPrompt: SYSTEM,
       model: 'claude-haiku-4-5-20251001',
-      // One turn of prose, one turn to call StructuredOutput.
+      // One turn of prose, one to call StructuredOutput; one turn is not enough.
       maxTurns: 4,
       tools: [],
       allowedTools: [],

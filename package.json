@@ -1,15 +1,14 @@
 {
-  "name": "dog-or-not-hotdog",
+  "name": "seefood",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
-    "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1"
+    "@anthropic-ai/claude-agent-sdk": "^0.3.276",
+    "express": "^4.21.2"
   }
 }

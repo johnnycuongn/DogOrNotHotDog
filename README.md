@@ -1,7 +1,7 @@
 # SeeFood
 
 A recreation of the SeeFood app from HBO's *Silicon Valley*: point it at
-something, hit the shutter, and Claude rules on whether it is a hotdog.
+something and Claude rules on whether it is a hotdog.
 
 ## Run it
 
@@ -11,41 +11,47 @@ npm start          # http://localhost:3457
 PORT=4000 npm start
 ```
 
-## From your phone
+**No API key.** The classifier goes through `@anthropic-ai/claude-agent-sdk`,
+which picks up the Claude Code OAuth login from the macOS Keychain. If `claude`
+works in your terminal, this works.
 
-The server listens on every interface, so open `http://<your-mac's-ip>:3457`
-on a phone on the same wifi. Tap the photo area and the phone offers its
-camera or camera roll.
+## Share it
 
-The in-page camera viewfinder is the one thing that will not work there:
-`getUserMedia` needs a secure context, and plain http to a LAN address is not
-one. The page detects this and hides the camera button rather than failing
-when you tap it. To get the viewfinder on a phone, put the app behind https
-(a tunnel such as `cloudflared` or `ngrok` is enough).
+That Keychain login only exists on this machine, so this app is not deployable
+to a normal host — it runs here and you expose it with a tunnel:
 
-No API key. The classifier goes through `@anthropic-ai/claude-agent-sdk`, which
-picks up the Claude Code OAuth login from the macOS Keychain. If `claude` works
-in your terminal, this works.
+```sh
+cloudflared tunnel --url http://localhost:3457
+```
+
+That prints an `https://….trycloudflare.com` address, no Cloudflare account
+needed. It lives as long as the command runs, and the app only answers while
+your machine is awake. The https is what makes the in-page camera work on a
+phone; over plain http to a LAN address the browser blocks `getUserMedia` and
+the page hides that button.
 
 ## How it fits together
 
-- `server.js` — Express + multer. Holds the upload in memory, never writes it to
-  disk. Accepts JPEG/PNG/GIF/WebP up to 8 MB.
-- `classifier.js` — one Agent SDK call per photo: no tools, no settings sources,
-  a custom system prompt, and a `json_schema` output format so the reply is
-  always `{ verdict, confidence, saw }`.
-- `public/index.html` — the page. Drop, click or paste a photo, or switch on
-  the camera and take one. While Claude looks, a ring of dots steps round over
-  a dimmed photo under "Evaluating…". The verdict then lands as a bar with a
-  half-disc badge: green with a tick at the top of the frame for a hotdog, red
-  with a cross at the bottom for anything else, matching the show.
+- `classifier.js` — one Agent SDK call per photo: no tools, no settings
+  sources, a custom system prompt, and a `json_schema` output format, so the
+  reply is always `{ verdict, confidence, saw }`.
+- `server.js` — Express. The browser posts the image bytes raw with the file's
+  type as `Content-Type`, so there is no multipart form to parse. JPEG, PNG,
+  GIF or WebP up to 8 MB, held in memory, never written to disk.
+- `public/index.html` — drop, click, paste, or use the camera. Photos are
+  downscaled to 1568 px on the long edge before upload, since Claude does not
+  use more than that.
 
-`maxTurns` is 4 because the model spends one turn describing the image and
-another calling `StructuredOutput`; one turn is not enough.
+Two things worth knowing before you change them:
 
-## API
+- `maxTurns` is 4. The model spends one turn describing the image and another
+  calling `StructuredOutput`; at 1 it returns `error_max_turns` with no output.
+- The model id carries its date: `claude-haiku-4-5-20251001`. The bare
+  `claude-haiku-4-5` alias invokes two models per request and measured 10x the
+  cost ($0.158 vs $0.015 per photo) for the same verdict.
 
-```sh
-curl -F "image=@lunch.jpg" http://localhost:3457/api/classify
-# {"verdict":"hotdog","confidence":0.95,"saw":"sausage in bun","costUsd":0.045}
-```
+## Cost
+
+Roughly **$0.015 per photo**, most of it the one-off system prompt. There is no
+rate limiting, so treat a tunnel URL as something you hand to people you know
+rather than something you post publicly — every visitor spends your credits.

@@ -430,17 +430,40 @@
     readout.classList.add('is-shown');
   }
 
+  // Claude works from images up to 1568px on the long edge, and Vercel caps the
+  // request body, so shrink before upload. Smaller photo, fewer tokens, faster.
+  const MAX_EDGE = 1568;
+
+  async function downscale(file) {
+    const bitmap = await createImageBitmap(file).catch(() => null);
+    if (!bitmap) return file;
+
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size <= 3_500_000) return file;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.85));
+    return blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file;
+  }
+
   async function send(file) {
     reset();
     showPhoto(file);
     stage.classList.add('is-working');
     readout.classList.remove('is-shown');
 
-    const body = new FormData();
-    body.append('image', file);
-
     try {
-      const response = await fetch('/api/classify', { method: 'POST', body });
+      const sending = await downscale(file);
+      const response = await fetch('/api/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': sending.type },
+        body: sending,
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'The verdict did not come back.');
 
@@ -455,6 +478,7 @@
       again.hidden = false;
     }
   }
+
 </script>
 </body>
 </html>

@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SeeFood</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>%F0%9F%8C%AD</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #4f9a3f;
+    --red: #b8332c;
+    --yellow: #ffd400;
+    --round: "Baloo 2", "Arial Rounded MT Bold", Verdana, sans-serif;
+    --heavy: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+    padding: calc(28px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px))
+             calc(64px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
+    background: #fbfbfb;
+    color: #141414;
+    font: 16px/1.5 var(--ui);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main { max-width: 640px; margin: 0 auto; }
+
+  h1 {
+    margin: 0;
+    font-family: var(--round);
+    font-weight: 800;
+    font-size: 2.25rem;
+    line-height: 1.1;
+  }
+
+  .tagline { margin: 2px 0 24px; color: #6b6b6b; }
+
+  /* ---- the picture ---- */
+
+  .stage {
+    position: relative;
+    background: #ededed;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .dropzone {
+    display: block;
+    width: 100%;
+    min-height: 260px;
+    padding: 28px;
+    background: none;
+    border: 2px dashed #c9c9c9;
+    border-radius: 8px;
+    font: inherit;
+    color: #666;
+    cursor: pointer;
+  }
+
+  .dropzone:hover, .stage.is-armed .dropzone { border-color: #8a8a8a; background: #f5f5f5; }
+  .dropzone:focus-visible { outline: 3px solid #141414; outline-offset: 2px; }
+  .dropzone b { display: block; margin-bottom: 4px; font-size: 1.125rem; color: #141414; }
+  .dropzone span { font-size: 0.875rem; }
+
+  .stage.has-photo .dropzone,
+  .stage.has-camera .dropzone { display: none; }
+
+  .photo, .cam {
+    display: none;
+    width: 100%;
+    max-height: 66vh;
+    object-fit: contain;
+    background: #1a1a1a;
+    vertical-align: bottom;
+  }
+
+  .stage.has-photo .photo { display: block; }
+  .stage.has-camera:not(.has-photo) .cam { display: block; object-fit: cover; height: 420px; }
+
+  /* ---- verdict banner ---- */
+  /* Green sits at the top of the frame, red at the bottom, as the show has it.
+     The badge is a half-disc bulging out of the bar, not a ringed circle. */
+
+  .verdict {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stage.has-verdict .verdict { display: flex; }
+
+  .verdict[data-verdict="hotdog"] { top: 0; }
+  .verdict[data-verdict="not_hotdog"] { bottom: 0; flex-direction: column-reverse; }
+
+  .bar {
+    width: 100%;
+    padding: 9px 20px 13px;
+    background: var(--red);
+    text-align: center;
+  }
+
+  .verdict[data-verdict="hotdog"] .bar { background: var(--green); }
+
+  .bar span {
+    font-family: var(--heavy);
+    font-weight: 900;
+    font-size: clamp(1.9rem, 7.5vw, 2.9rem);
+    line-height: 1.05;
+    letter-spacing: -0.005em;
+    color: #fff;
+    -webkit-text-stroke: 6px #101010;
+    paint-order: stroke fill;
+  }
+
+  .badge {
+    display: grid;
+    place-items: center;
+    width: 154px;
+    height: 77px;
+    background: var(--red);
+  }
+
+  .verdict[data-verdict="hotdog"] .badge {
+    background: var(--green);
+    border-radius: 0 0 77px 77px;
+  }
+
+  .verdict[data-verdict="not_hotdog"] .badge { border-radius: 77px 77px 0 0; }
+
+  .badge svg { width: 78px; height: 58px; overflow: visible; }
+  .badge .tick, .verdict[data-verdict="hotdog"] .badge .cross { display: none; }
+  .verdict[data-verdict="hotdog"] .badge .tick { display: block; }
+
+  .badge path, .badge line {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 11;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+  }
+
+  .badge .edge { stroke: #101010; stroke-width: 20; }
+
+  .working {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-content: center;
+    justify-items: center;
+    gap: 26px;
+    background: rgba(26, 26, 28, 0.6);
+  }
+
+  .stage.is-working .working { display: grid; }
+
+  .working p {
+    margin: 0;
+    font-family: var(--round);
+    font-weight: 800;
+    font-size: clamp(1.75rem, 6vw, 2.25rem);
+    line-height: 1;
+    color: #fff;
+    -webkit-text-stroke: 5px #1a1a1a;
+    paint-order: stroke fill;
+  }
+
+  /* ring of dots, stepping round one position at a time */
+  .spinner {
+    position: relative;
+    width: 112px;
+    height: 112px;
+    animation: spin 1.1s steps(12) infinite;
+  }
+
+  .spinner i {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    background: var(--red);
+    border-radius: 50%;
+    transform-origin: 50% 56px;
+  }
+
+  .spinner i:nth-child(1)  { transform: rotate(0deg);   opacity: 1.00; }
+  .spinner i:nth-child(2)  { transform: rotate(30deg);  opacity: 0.88; }
+  .spinner i:nth-child(3)  { transform: rotate(60deg);  opacity: 0.76; }
+  .spinner i:nth-child(4)  { transform: rotate(90deg);  opacity: 0.65; }
+  .spinner i:nth-child(5)  { transform: rotate(120deg); opacity: 0.55; }
+  .spinner i:nth-child(6)  { transform: rotate(150deg); opacity: 0.46; }
+  .spinner i:nth-child(7)  { transform: rotate(180deg); opacity: 0.38; }
+  .spinner i:nth-child(8)  { transform: rotate(210deg); opacity: 0.31; }
+  .spinner i:nth-child(9)  { transform: rotate(240deg); opacity: 0.25; }
+  .spinner i:nth-child(10) { transform: rotate(270deg); opacity: 0.20; }
+  .spinner i:nth-child(11) { transform: rotate(300deg); opacity: 0.16; }
+  .spinner i:nth-child(12) { transform: rotate(330deg); opacity: 0.12; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- below ---- */
+
+  .readout { display: none; margin: 14px 2px 0; color: #555; }
+  .readout.is-shown { display: block; }
+  .readout p { margin: 0 0 3px; }
+  .readout .saw { color: #141414; font-weight: 600; }
+  .readout .meta { font-size: 0.875rem; color: #808080; }
+  .readout[data-state="error"] .saw { color: #b00016; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+  .btn {
+    min-height: 46px;
+    padding: 12px 20px;
+    background: #141414;
+    border: 2px solid #141414;
+    border-radius: 6px;
+    color: #fff;
+    font: 600 0.9375rem/1 var(--ui);
+    cursor: pointer;
+  }
+
+  .btn.ghost { background: none; color: #141414; }
+  .btn:focus-visible { outline: 3px solid #141414; outline-offset: 2px; }
+  .btn[hidden] { display: none; }
+
+  footer { margin-top: 36px; font-size: 0.8125rem; color: #909090; }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.45; } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>SeeFood</h1>
+  <p class="tagline">Point it at your lunch. Claude rules on whether it is a hotdog.</p>
+
+  <div class="stage" id="stage">
+    <button type="button" class="dropzone" id="dropzone">
+      <b id="dropTitle">Drop a photo here</b>
+      <span id="dropHint">or click to choose one &mdash; JPEG, PNG, GIF or WebP, up to 8&nbsp;MB</span>
+    </button>
+
+    <video class="cam" id="cam" playsinline muted autoplay></video>
+    <img class="photo" id="photo" alt="">
+
+    <div class="working" id="working">
+      <div class="spinner" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <p role="status">Evaluating&hellip;</p>
+    </div>
+
+    <div class="verdict" id="verdict">
+      <div class="bar"><span id="verdictText"></span></div>
+      <div class="badge">
+        <svg class="tick" viewBox="0 0 78 58" aria-hidden="true">
+          <path class="edge" d="M8 31 L30 51 L70 7"/>
+          <path d="M8 31 L30 51 L70 7"/>
+        </svg>
+        <svg class="cross" viewBox="0 0 78 58" aria-hidden="true">
+          <line class="edge" x1="17" y1="8" x2="61" y2="50"/>
+          <line class="edge" x1="61" y1="8" x2="17" y2="50"/>
+          <line x1="17" y1="8" x2="61" y2="50"/>
+          <line x1="61" y1="8" x2="17" y2="50"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="readout" id="readout">
+    <p class="saw" id="saw"></p>
+    <p class="meta" id="meta"></p>
+  </div>
+
+  <div class="controls">
+    <button type="button" class="btn" id="again" hidden>Try another photo</button>
+    <button type="button" class="btn ghost" id="camToggle">Use camera</button>
+    <button type="button" class="btn" id="snap" hidden>Take the photo</button>
+  </div>
+
+  <footer>Runs on your Claude Code login through the Agent SDK. Photos stay on this machine except for the one call to Claude.</footer>
+
+  <input type="file" id="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+</main>
+
+<script>
+  const stage = document.getElementById('stage');
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file');
+  const photo = document.getElementById('photo');
+  const cam = document.getElementById('cam');
+  const verdict = document.getElementById('verdict');
+  const verdictText = document.getElementById('verdictText');
+  const readout = document.getElementById('readout');
+  const saw = document.getElementById('saw');
+  const meta = document.getElementById('meta');
+  const again = document.getElementById('again');
+  const camToggle = document.getElementById('camToggle');
+  const snap = document.getElementById('snap');
+
+  let objectUrl = null;
+  let stream = null;
+
+  // Phones are touch-first and cannot drag a file onto the page.
+  const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (touch) {
+    document.getElementById('dropTitle').textContent = 'Take or choose a photo';
+    document.getElementById('dropHint').innerHTML = 'JPEG, PNG, GIF or WebP, up to 8\u00a0MB';
+  }
+
+  // getUserMedia needs a secure context, so it is unavailable when the page is
+  // served over plain http to another device on the network. The file input
+  // still offers the camera there, so point people at that instead.
+  const canUseCamera = Boolean(window.isSecureContext && navigator.mediaDevices?.getUserMedia);
+  if (!canUseCamera) camToggle.hidden = true;
+
+  // ---- picking a photo ----
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) send(fileInput.files[0]);
+  });
+
+  again.addEventListener('click', () => {
+    reset();
+    fileInput.value = '';
+    fileInput.click();
+  });
+
+  ['dragenter', 'dragover'].forEach((type) =>
+    stage.addEventListener(type, (event) => {
+      event.preventDefault();
+      stage.classList.add('is-armed');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach((type) =>
+    stage.addEventListener(type, (event) => {
+      event.preventDefault();
+      if (type === 'dragleave' && stage.contains(event.relatedTarget)) return;
+      stage.classList.remove('is-armed');
+    })
+  );
+
+  stage.addEventListener('drop', (event) => {
+    const file = event.dataTransfer?.files?.[0];
+    if (file) send(file);
+  });
+
+  window.addEventListener('paste', (event) => {
+    const file = [...(event.clipboardData?.files || [])][0];
+    if (file) send(file);
+  });
+
+  // ---- optional camera ----
+
+  camToggle.addEventListener('click', async () => {
+    if (stream) { stopCamera(); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      cam.srcObject = stream;
+      stage.classList.add('has-camera');
+      stage.classList.remove('has-photo', 'has-verdict');
+      camToggle.textContent = 'Turn the camera off';
+      snap.hidden = false;
+      say('done', '', '');
+      readout.classList.remove('is-shown');
+    } catch (error) {
+      say('error', error.name === 'NotAllowedError' ? 'Camera access was declined.' : 'No camera available.', 'Choose a file instead.');
+    }
+  });
+
+  function stopCamera() {
+    stream?.getTracks().forEach((t) => t.stop());
+    stream = null;
+    stage.classList.remove('has-camera');
+    camToggle.textContent = 'Use camera';
+    snap.hidden = true;
+  }
+
+  snap.addEventListener('click', () => {
+    const w = cam.videoWidth;
+    const h = cam.videoHeight;
+    if (!w || !h) { say('error', 'The camera is not ready yet.', ''); return; }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(cam, 0, 0, w, h);
+    canvas.toBlob((blob) => {
+      if (!blob) { say('error', 'That frame did not save.', ''); return; }
+      stopCamera();
+      send(new File([blob], 'shot.jpg', { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.92);
+  });
+
+  // ---- classifying ----
+
+  function reset() {
+    stage.classList.remove('has-verdict');
+    readout.classList.remove('is-shown');
+    again.hidden = true;
+  }
+
+  function showPhoto(file) {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = URL.createObjectURL(file);
+    photo.src = objectUrl;
+    photo.alt = 'The photo you submitted';
+    stage.classList.add('has-photo');
+  }
+
+  function say(state, headline, detail) {
+    readout.dataset.state = state;
+    saw.textContent = headline;
+    meta.textContent = detail || '';
+    readout.classList.add('is-shown');
+  }
+
+  async function send(file) {
+    reset();
+    showPhoto(file);
+    stage.classList.add('is-working');
+    readout.classList.remove('is-shown');
+
+    const body = new FormData();
+    body.append('image', file);
+
+    try {
+      const response = await fetch('/api/classify', { method: 'POST', body });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'The verdict did not come back.');
+
+      verdict.dataset.verdict = data.verdict;
+      verdictText.textContent = data.verdict === 'hotdog' ? 'Hotdog' : 'Not hotdog';
+      stage.classList.add('has-verdict');
+      say('done', data.saw, Math.round(data.confidence * 100) + '% sure');
+    } catch (error) {
+      say('error', error.message, 'Nothing was saved. Send another photo when you are ready.');
+    } finally {
+      stage.classList.remove('is-working');
+      again.hidden = false;
+    }
+  }
+</script>
+</body>
+</html>

@@ -80,14 +80,19 @@ Two things worth knowing before changing them:
   calling `StructuredOutput`; at 1 it returns `error_max_turns` with no output.
 - The model id carries its date: `claude-haiku-4-5-20251001`. The bare
   `claude-haiku-4-5` alias invoked two models per request and measured 10x the
-  cost ($0.158 vs $0.015 per photo) for an identical verdict.
+  cost ($0.158 vs $0.015 per photo, both warm) for an identical verdict.
 
 ## Cost
 
-Roughly **$0.015 of usage per photo**. On a Claude Code login that draws against
-your subscription's allowance rather than arriving as a bill — heavy traffic
-gets you throttled, not invoiced. There is no rate limiting, so treat a tunnel
-URL as something you hand to people you know.
+Roughly **$0.013 of usage per photo** once it is warm, measured over repeated
+calls. The **first call after a fresh install costs about 15x that** (~$0.22)
+because nothing is cached yet — including the one `npm run setup` makes. That
+is normal; it settles on the next photo.
+
+On a Claude Code login this draws against your subscription's allowance rather
+than arriving as a bill: heavy traffic gets you throttled, not invoiced. There
+is no rate limiting, so treat a tunnel URL as something you hand to people you
+know.
 
 ## The camera
 

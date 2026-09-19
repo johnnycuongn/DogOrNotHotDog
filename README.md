@@ -60,6 +60,10 @@ Nothing makes it answer while the Mac is off, because the credential doing the
 authenticating only exists on that Mac. An always-on URL means a server, and a
 server means an API key instead of this login.
 
+A *named* tunnel keeps one hostname across reconnects, but it needs a domain
+you own sitting on Cloudflare's nameservers. Written up in
+[BACKLOG.md](BACKLOG.md).
+
 ## How it fits together
 
 - `classifier.js` — one Agent SDK call per photo: no tools, a custom system

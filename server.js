@@ -38,5 +38,25 @@ app.use((error, _req, res, _next) => {
   res.status(400).json({ error: message });
 });
 
-const port = Number(process.env.PORT) || 3457;
-app.listen(port, () => console.log(`SeeFood → http://localhost:${port}`));
+const wanted = Number(process.env.PORT) || 3457;
+
+// Ports get taken. Rather than dying with EADDRINUSE, fall back to whatever is
+// free and print the address actually being used.
+function listen(port, isFallback) {
+  const server = app.listen(port, () => {
+    const actual = server.address().port;
+    if (isFallback) console.log(`Port ${wanted} was busy.`);
+    console.log(`SeeFood → http://localhost:${actual}`);
+    if (actual !== wanted) console.log(`To share it:  PORT=${actual} npm run share`);
+  });
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE' && !isFallback) {
+      listen(0, true);
+      return;
+    }
+    console.error(error.message);
+    process.exit(1);
+  });
+}
+
+listen(wanted, false);

@@ -5,3 +5,4 @@ node_modules/
 *.pem
 .DS_Store
 .playwright-mcp/
+.cache/

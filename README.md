@@ -3,6 +3,11 @@
 A recreation of the SeeFood app from HBO's *Silicon Valley*. Point it at
 something, and Claude rules on whether it is a hotdog.
 
+<p align="center">
+  <img src="docs/hotdog.png" width="49%" alt="SeeFood with a green Hotdog banner across the top of the picture, reading: hotdog with mustard, 99% sure">
+  <img src="docs/not-hotdog.png" width="49%" alt="SeeFood with a red Not hotdog banner across the bottom of the picture, reading: A banana, 99% sure">
+</p>
+
 There is **no API key**. It borrows the login the Claude Code CLI already holds
 in your Keychain, which is the one thing to understand before installing it.
 
@@ -53,8 +58,7 @@ connection, not a reservation:
   behind a router with no port forwarding.
 - Close the laptop and that connection dies. Requests have nowhere to go.
 - On reconnect a quick tunnel gets a **new random name** — the old one is gone
-  for good. A free Cloudflare account and a *named* tunnel keeps one hostname,
-  but the Mac still has to be awake.
+  for good.
 
 Nothing makes it answer while the Mac is off, because the credential doing the
 authenticating only exists on that Mac. An always-on URL means a server, and a
@@ -77,6 +81,8 @@ you own sitting on Cloudflare's nameservers. Written up in
   use more than that.
 - `scripts/` — `setup.sh`, `share.sh`, and `smoke.mjs` (`npm run smoke` re-runs
   the end-to-end check any time).
+- `test/fixtures/` — the two drawings in the screenshots above. `npm run smoke`
+  classifies the hotdog one.
 
 Two things worth knowing before changing them:
 
